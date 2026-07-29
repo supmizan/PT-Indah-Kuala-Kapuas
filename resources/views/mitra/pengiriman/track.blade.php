@@ -10,14 +10,17 @@
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         z-index: 1;
     }
+
     .info-item {
         margin-bottom: 12px;
         padding-bottom: 12px;
         border-bottom: 1px solid #f3f4f6;
     }
+
     .info-item:last-child {
         border-bottom: none;
     }
+
     .gray-marker {
         filter: grayscale(100%) brightness(80%);
     }
@@ -47,7 +50,7 @@
     <div class="col-lg-4">
         <div class="card-custom">
             <h5 class="fw-bold mb-4 text-primary"><i class="fa-solid fa-truck-moving me-2"></i>Status Pengiriman</h5>
-            
+
             <div class="info-item">
                 <small class="text-muted d-block fw-semibold">Volume BBM Pesanan</small>
                 <strong class="fs-5 text-primary">{{ number_format($pengiriman->pesanan->jumlah_bbm) }} Liter</strong>
@@ -83,7 +86,7 @@
 
 @section('scripts')
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function() {
         const officeCoords = [-0.0234, 109.3719]; // PT IKK HQ
         const destCoords = [-0.0270, 109.3500]; // Mitra Destination (mockup center)
 
@@ -102,16 +105,22 @@
             iconSize: [36, 36],
             iconAnchor: [18, 36]
         });
-        L.marker(officeCoords, {icon: officeIcon}).addTo(map)
+        L.marker(officeCoords, {
+                icon: officeIcon
+            }).addTo(map)
             .bindPopup('<strong>PT Indah Kuala Kapuas (HQ)</strong><br>Titik Muat BBM');
 
         // Destination Marker (Mitra)
-        const destIcon = L.icon({
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/8065/8065067.png',
-            iconSize: [36, 36],
-            iconAnchor: [18, 36]
-        });
-        L.marker(destCoords, {icon: destIcon}).addTo(map)
+        if (destCoords) {
+            const destIcon = L.icon({
+                iconUrl: 'https://cdn-icons-png.flaticon.com/512/8065/8065067.png',
+                iconSize: [36, 36],
+                iconAnchor: [18, 36]
+            });
+        }
+        L.marker(destCoords, {
+                icon: destIcon
+            }).addTo(map)
             .bindPopup('<strong>Lokasi Perusahaan Anda</strong><br>Tujuan Serah Terima BBM').openPopup();
 
         // Truck Icon (Active Delivery)
@@ -157,10 +166,20 @@
 
                                 // Format update date and time
                                 const date = new Date(point.waktu || point.created_at);
-                                const dateStr = date.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                                const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                                const dateStr = date.toLocaleDateString('id-ID', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric'
+                                });
+                                const timeStr = date.toLocaleTimeString('id-ID', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit'
+                                });
 
-                                const m = L.marker(prevCoords, {icon: grayIcon}).addTo(map)
+                                const m = L.marker(prevCoords, {
+                                        icon: grayIcon
+                                    }).addTo(map)
                                     .bindPopup(`<strong>Lokasi Sebelumnya</strong><br>Waktu Update: ${dateStr} ${timeStr}`);
                                 historyMarkers.push(m);
                             }
@@ -173,15 +192,27 @@
                             const lastLng = parseFloat(lastPoint.longitude);
                             const activeCoords = [lastLat, lastLng];
                             pathCoords.push(activeCoords);
-                            pathCoords.push(destCoords);
+                            if (destCoords) {
+                                pathCoords.push(destCoords);
+                            }
 
                             // Format active update date and time
                             const activeDate = new Date(lastPoint.waktu || lastPoint.created_at);
-                            const activeDateStr = activeDate.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                            const activeTimeStr = activeDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                            const activeDateStr = activeDate.toLocaleDateString('id-ID', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                            });
+                            const activeTimeStr = activeDate.toLocaleTimeString('id-ID', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit'
+                            });
 
                             if (!truckMarker) {
-                                truckMarker = L.marker(activeCoords, {icon: truckIcon}).addTo(map)
+                                truckMarker = L.marker(activeCoords, {
+                                        icon: truckIcon
+                                    }).addTo(map)
                                     .bindPopup(`<strong>Armada Tangki BBM</strong><br>Sedang membawa pesanan Anda<br>Update Terakhir: ${activeDateStr} ${activeTimeStr}`).openPopup();
                             } else {
                                 truckMarker.setLatLng(activeCoords);
@@ -192,11 +223,17 @@
                             if (routeLine) {
                                 map.removeLayer(routeLine);
                             }
-                            routeLine = L.polyline(pathCoords, {color: '#2563eb', weight: 4, dashArray: '6, 6'}).addTo(map);
+                            routeLine = L.polyline(pathCoords, {
+                                color: '#2563eb',
+                                weight: 4,
+                                dashArray: '6, 6'
+                            }).addTo(map);
 
                             // Adjust bounds to fit all updates
                             const bounds = L.latLngBounds(pathCoords);
-                            map.fitBounds(bounds, {padding: [50, 50]});
+                            map.fitBounds(bounds, {
+                                padding: [50, 50]
+                            });
                         }
                     }
                 })
@@ -205,8 +242,8 @@
 
         updateLocation();
 
-        @if($pengiriman->status === 'proses')
-            setInterval(updateLocation, 5000);
+        @if($pengiriman - > status === 'proses')
+        setInterval(updateLocation, 5000);
         @endif
     });
 </script>
