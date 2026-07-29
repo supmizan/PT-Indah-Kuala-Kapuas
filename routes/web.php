@@ -7,6 +7,16 @@ use App\Http\Controllers\MitraController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\PembayaranController;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+
+Route::get('/cek-password', function () {
+    $user = User::where('email', 'admin@ikk.com')->first();
+
+    return [
+        'cocok' => Hash::check('password', $user->password),
+    ];
+});
 
 Route::get('/cek-db', function () {
     return response()->json([
