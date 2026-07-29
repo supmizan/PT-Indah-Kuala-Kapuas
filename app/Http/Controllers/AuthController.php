@@ -25,14 +25,28 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
+        Log::info('=== LOGIN DICOBA ===');
+        Log::info($credentials);
+
         if (Auth::attempt($credentials)) {
+
+            Log::info('AUTH BERHASIL');
+            Log::info([
+                'id' => Auth::id(),
+                'user' => Auth::user(),
+                'session_id' => session()->getId(),
+            ]);
+
             $request->session()->regenerate();
+
             return $this->redirectUserBasedOnRole(Auth::user());
         }
 
+        Log::info('AUTH GAGAL');
+
         return back()->withErrors([
             'email' => 'Email atau password salah.',
-        ])->onlyInput('email');
+        ]);
     }
 
     public function showRegister()
