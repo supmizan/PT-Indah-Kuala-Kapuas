@@ -6,6 +6,15 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\MitraController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\PembayaranController;
+use Illuminate\Support\Facades\DB;
+
+Route::get('/cek-db', function () {
+    return response()->json([
+        'database' => DB::connection()->getDatabaseName(),
+        'users' => DB::table('users')->count(),
+        'email_admin' => DB::table('users')->where('email', 'admin@ikk.com')->first(),
+    ]);
+});
 
 // Public Routes
 Route::get('/', function () {
