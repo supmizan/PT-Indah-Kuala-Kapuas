@@ -88,7 +88,22 @@
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const officeCoords = [-0.0234, 109.3719]; // PT IKK HQ
-        const destCoords = [-0.0270, 109.3500]; // Mitra Destination (mockup center)
+        @php
+        $mitraLoc = $pengiriman - > pesanan - > mitra;
+        @endphp
+        @if($mitraLoc - > latitude && $mitraLoc - > longitude)
+        const destCoords = [{
+            {
+                $mitraLoc - > latitude
+            }
+        }, {
+            {
+                $mitraLoc - > longitude
+            }
+        }]; // Lokasi {{ $mitraLoc->nama_perusahaan }}
+        @else
+        const destCoords = null; // Admin belum mengisi koordinat lokasi mitra ini
+        @endif
 
         // Initialize Map
         const map = L.map('map').setView(officeCoords, 13);
@@ -117,11 +132,11 @@
                 iconSize: [36, 36],
                 iconAnchor: [18, 36]
             });
+            L.marker(destCoords, {
+                    icon: destIcon
+                }).addTo(map)
+                .bindPopup('<strong>Lokasi Perusahaan Anda</strong><br>Tujuan Serah Terima BBM').openPopup();
         }
-        L.marker(destCoords, {
-                icon: destIcon
-            }).addTo(map)
-            .bindPopup('<strong>Lokasi Perusahaan Anda</strong><br>Tujuan Serah Terima BBM').openPopup();
 
         // Truck Icon (Active Delivery)
         const truckIcon = L.icon({
@@ -242,7 +257,7 @@
 
         updateLocation();
 
-        @if($pengiriman->status === 'proses')
+        @if($pengiriman - > status === 'proses')
         setInterval(updateLocation, 5000);
         @endif
     });
