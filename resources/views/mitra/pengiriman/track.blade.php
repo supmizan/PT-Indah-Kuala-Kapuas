@@ -89,16 +89,16 @@
     document.addEventListener("DOMContentLoaded", function() {
         const officeCoords = [-0.0234, 109.3719]; // PT IKK HQ
         @php
-        $mitraLoc = $pengiriman - > pesanan - > mitra;
+        $mitraLoc = $pengiriman->pesanan->mitra;
         @endphp
-        @if($mitraLoc - > latitude && $mitraLoc - > longitude)
+        @if($mitraLoc->latitude && $mitraLoc->longitude)
         const destCoords = [{
             {
-                $mitraLoc - > latitude
+                $mitraLoc->latitude
             }
         }, {
             {
-                $mitraLoc - > longitude
+                $mitraLoc->longitude
             }
         }]; // Lokasi {{ $mitraLoc->nama_perusahaan }}
         @else
@@ -257,7 +257,7 @@
 
         updateLocation();
 
-        @if($pengiriman - > status === 'proses')
+        @if($pengiriman->status === 'proses')
         setInterval(updateLocation, 5000);
         @endif
     });
