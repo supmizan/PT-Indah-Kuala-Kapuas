@@ -242,7 +242,7 @@
 
         updateLocation();
 
-        @if($pengiriman - > status === 'proses')
+        @if($pengiriman->status === 'proses')
         setInterval(updateLocation, 5000);
         @endif
     });
