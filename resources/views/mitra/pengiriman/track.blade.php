@@ -91,16 +91,8 @@
         @php
         $mitraLoc = $pengiriman->pesanan->mitra;
         @endphp
-        @if($mitraLoc->latitude && $mitraLoc->longitude)
-        const destCoords = [{
-            {
-                $mitraLoc->latitude
-            }
-        }, {
-            {
-                $mitraLoc->longitude
-            }
-        }]; // Lokasi {{ $mitraLoc->nama_perusahaan }}
+        @if($mitraLoc && $mitraLoc->latitude && $mitraLoc->longitude)
+        const destCoords = [{{ $mitraLoc->latitude }}, {{ $mitraLoc->longitude }}]; // Lokasi {{ $mitraLoc->nama_perusahaan }}
         @else
         const destCoords = null; // Admin belum mengisi koordinat lokasi mitra ini
         @endif
