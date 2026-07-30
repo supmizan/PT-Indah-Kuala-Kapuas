@@ -53,17 +53,6 @@
                 <span class="small text-secondary"><i class="fa-solid fa-circle-info text-primary me-1"></i> Hubungi Administrator untuk mendaftarkan akun baru atau jika terjadi kendala login.</span>
             </div>
         </div>
-        
-        <div class="mt-4 text-center">
-            <div class="p-3 bg-white rounded-3 shadow-sm border">
-                <small class="text-secondary d-block fw-semibold mb-2">Akun Demo Pengujian:</small>
-                <div class="d-flex flex-column gap-1 text-start">
-                    <span class="small">👤 <strong>Admin:</strong> <code>admin@ikk.com</code> / <code>password</code></span>
-                    <span class="small">🏢 <strong>Mitra:</strong> <code>borneo@mitra.com</code> / <code>password</code></span>
-                    <span class="small">🚚 <strong>Driver:</strong> <code>budi@driver.com</code> / <code>password</code></span>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 @endsection
