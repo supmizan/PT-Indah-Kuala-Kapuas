@@ -80,7 +80,7 @@
 
             <div class="text-center mb-4">
                 <p class="fw-semibold mb-2">Scan QRIS berikut untuk membayar:</p>
-                <img src="{{ asset('images/qris.png') }}" alt="QRIS PT Indah Kuala Kapuas" class="img-fluid rounded-3 border p-2" style="max-width: 320px;">
+                <img src="{{ asset('images/qris.jpeg') }}" alt="QRIS PT Indah Kuala Kapuas" class="img-fluid rounded-3 border p-2" style="max-width: 320px;">
                 <p class="text-muted small mt-2 mb-0">
                     Setelah transfer, screenshot bukti pembayaran (menampilkan nominal & status berhasil), lalu upload lewat form di bawah ini.
                 </p>
