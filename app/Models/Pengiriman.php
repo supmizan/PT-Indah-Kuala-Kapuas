@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Pengiriman extends Model
 {
+    use HasFactory;
+
     protected $table = 'pengirimen'; // explicitly map to 'pengirimen'
 
     protected $fillable = [
