@@ -46,10 +46,44 @@
                     <td>
                         @if($pesanan->sudahLunas())
                         <span class="badge bg-success">Lunas</span>
-                        @elseif($pesanan->pembayaran && $pesanan->pembayaran->status === 'gagal')
-                        <span class="badge bg-danger">Gagal</span>
-                        @elseif($pesanan->pembayaran && $pesanan->pembayaran->status === 'kedaluwarsa')
-                        <span class="badge bg-secondary">Kedaluwarsa</span>
+                        @elseif($pesanan->pembayaran && $pesanan->pembayaran->status === 'menunggu_verifikasi')
+                        <span class="badge bg-info text-dark d-block mb-1">Menunggu Verifikasi</span>
+                        <div class="d-flex flex-column gap-1">
+                            <a href="{{ route('admin.pembayaran.bukti', $pesanan->pembayaran->id) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                                <i class="fa-solid fa-image me-1"></i> Lihat Bukti
+                            </a>
+                            <form action="{{ route('admin.pembayaran.verifikasi', $pesanan->pembayaran->id) }}" method="POST" onsubmit="return confirm('Konfirmasi pesanan #{{ $pesanan->id }} sudah lunas?')">
+                                @csrf
+                                <button type="submit" class="btn btn-success btn-sm w-100"><i class="fa-solid fa-check me-1"></i> Konfirmasi Lunas</button>
+                            </form>
+                            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#tolakModal{{ $pesanan->id }}">
+                                <i class="fa-solid fa-xmark me-1"></i> Tolak
+                            </button>
+
+                            <div class="modal fade" id="tolakModal{{ $pesanan->id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form action="{{ route('admin.pembayaran.tolak', $pesanan->pembayaran->id) }}" method="POST">
+                                            @csrf
+                                            <div class="modal-header">
+                                                <h6 class="modal-title">Tolak Bukti Transfer Pesanan #{{ $pesanan->id }}</h6>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <label class="form-label">Alasan penolakan (opsional)</label>
+                                                <textarea name="catatan_admin" class="form-control" rows="3" placeholder="Contoh: nominal tidak sesuai / gambar buram"></textarea>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                                                <button type="submit" class="btn btn-danger btn-sm">Tolak Bukti</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @elseif($pesanan->pembayaran && $pesanan->pembayaran->status === 'ditolak')
+                        <span class="badge bg-danger">Ditolak, Menunggu Upload Ulang</span>
                         @else
                         <span class="badge bg-warning text-dark">Menunggu</span>
                         @endif

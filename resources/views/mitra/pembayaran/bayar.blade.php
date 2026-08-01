@@ -12,6 +12,13 @@
             </a>
         </div>
 
+        @if(session('success'))
+        <div class="alert alert-success border-0 rounded-3 shadow-2xs mb-4">{{ session('success') }}</div>
+        @endif
+        @if(session('error'))
+        <div class="alert alert-danger border-0 rounded-3 shadow-2xs mb-4">{{ session('error') }}</div>
+        @endif
+
         <div class="card-custom">
             <table class="table table-borderless mb-4">
                 <tr>
@@ -30,48 +37,70 @@
                     <td class="text-muted">Status Pembayaran</td>
                     <td>:
                         @if($pembayaran->status === 'lunas')
-                            <span class="badge bg-success">Lunas</span>
-                        @elseif($pembayaran->status === 'gagal')
-                            <span class="badge bg-danger">Gagal</span>
-                        @elseif($pembayaran->status === 'kedaluwarsa')
-                            <span class="badge bg-secondary">Kedaluwarsa</span>
+                        <span class="badge bg-success">Lunas</span>
+                        @elseif($pembayaran->status === 'menunggu_verifikasi')
+                        <span class="badge bg-info text-dark">Menunggu Verifikasi Admin</span>
+                        @elseif($pembayaran->status === 'ditolak')
+                        <span class="badge bg-danger">Ditolak</span>
                         @else
-                            <span class="badge bg-warning text-dark">Menunggu Pembayaran</span>
+                        <span class="badge bg-warning text-dark">Menunggu Pembayaran</span>
                         @endif
                     </td>
                 </tr>
             </table>
 
-            <button id="btn-bayar" class="btn btn-primary w-100 py-2">
-                <i class="fa-solid fa-credit-card me-1"></i> Bayar Sekarang
-            </button>
-            <p class="text-muted small mt-3 mb-0">
-                Ini menggunakan Midtrans <strong>Sandbox</strong> (mode uji coba) — tidak ada uang sungguhan yang diproses.
-                Untuk simulasi pembayaran berhasil, gunakan nomor kartu uji <code>4811 1111 1111 1114</code>, CVV bebas, expiry bebas (tanggal depan).
-            </p>
+            @if($pembayaran->status === 'lunas')
+            {{-- Sudah lunas, tidak perlu apa-apa lagi --}}
+            <div class="alert alert-success mb-0">
+                <i class="fa-solid fa-circle-check me-1"></i> Pembayaran sudah dikonfirmasi lunas oleh admin.
+            </div>
+
+            @elseif($pembayaran->status === 'menunggu_verifikasi')
+            {{-- Sudah upload, tinggal nunggu admin --}}
+            <div class="alert alert-info mb-3">
+                <i class="fa-solid fa-clock me-1"></i> Bukti transfer Anda sedang diverifikasi oleh admin. Mohon tunggu.
+            </div>
+            @if($pembayaran->bukti_transfer)
+            <p class="text-muted small mb-1">Bukti yang sudah Anda upload:</p>
+            <img src="{{ route('admin.pembayaran.bukti', $pembayaran->id) }}" class="img-fluid rounded-3 border" style="max-height: 300px;" alt="Bukti transfer">
+            @endif
+
+            @else
+            {{-- status: menunggu (belum upload) atau ditolak (upload ulang) --}}
+            @if($pembayaran->status === 'ditolak')
+            <div class="alert alert-danger mb-3">
+                <i class="fa-solid fa-circle-exclamation me-1"></i>
+                Bukti transfer sebelumnya ditolak admin.
+                @if($pembayaran->catatan_admin)
+                <br>Alasan: {{ $pembayaran->catatan_admin }}
+                @endif
+                Silakan upload ulang bukti transfer yang benar.
+            </div>
+            @endif
+
+            <div class="text-center mb-4">
+                <p class="fw-semibold mb-2">Scan QRIS berikut untuk membayar:</p>
+                <img src="{{ asset('images/qris.png') }}" alt="QRIS PT Indah Kuala Kapuas" class="img-fluid rounded-3 border p-2" style="max-width: 320px;">
+                <p class="text-muted small mt-2 mb-0">
+                    Setelah transfer, screenshot bukti pembayaran (menampilkan nominal & status berhasil), lalu upload lewat form di bawah ini.
+                </p>
+            </div>
+
+            <form action="{{ route('mitra.pembayaran.upload', $pesanan->id) }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="mb-3">
+                    <label for="bukti_transfer" class="form-label fw-medium">Upload Bukti Transfer (JPG/PNG, maks. 2MB)</label>
+                    <input type="file" name="bukti_transfer" id="bukti_transfer" class="form-control @error('bukti_transfer') is-invalid @enderror" accept="image/png, image/jpeg" required>
+                    @error('bukti_transfer')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2">
+                    <i class="fa-solid fa-upload me-1"></i> Kirim Bukti Transfer
+                </button>
+            </form>
+            @endif
         </div>
     </div>
 </div>
-@endsection
-
-@section('scripts')
-<script src="{{ $isProduction ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js' }}" data-client-key="{{ $clientKey }}"></script>
-<script>
-    document.getElementById('btn-bayar').addEventListener('click', function () {
-        snap.pay("{{ $pembayaran->snap_token }}", {
-            onSuccess: function () {
-                window.location.href = "{{ route('mitra.pesanan.index') }}";
-            },
-            onPending: function () {
-                window.location.href = "{{ route('mitra.pesanan.index') }}";
-            },
-            onError: function () {
-                alert('Pembayaran gagal diproses. Silakan coba lagi.');
-            },
-            onClose: function () {
-                // Pengguna menutup popup tanpa menyelesaikan pembayaran — biarkan tetap di halaman ini.
-            }
-        });
-    });
-</script>
 @endsection

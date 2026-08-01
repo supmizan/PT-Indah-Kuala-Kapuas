@@ -6,25 +6,6 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\MitraController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\PembayaranController;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use App\Models\User;
-
-Route::get('/cek-password', function () {
-    $user = User::where('email', 'admin@ikk.com')->first();
-
-    return [
-        'cocok' => Hash::check('password', $user->password),
-    ];
-});
-
-Route::get('/cek-db', function () {
-    return response()->json([
-        'database' => DB::connection()->getDatabaseName(),
-        'users' => DB::table('users')->count(),
-        'email_admin' => DB::table('users')->where('email', 'admin@ikk.com')->first(),
-    ]);
-});
 
 // Public Routes
 Route::get('/', function () {
@@ -82,6 +63,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/pengiriman/{id}/track', [AdminController::class, 'pengirimanTrack'])->name('pengiriman.track');
     Route::get('/laporan', [AdminController::class, 'laporanIndex'])->name('laporan.index');
     Route::get('/laporan/cetak', [AdminController::class, 'laporanCetak'])->name('laporan.cetak');
+
+    // Verifikasi Pembayaran (bukti transfer QRIS manual)
+    Route::get('/pembayaran/{pembayaran}/bukti', [PembayaranController::class, 'lihatBukti'])->name('pembayaran.bukti');
+    Route::post('/pembayaran/{pembayaran}/verifikasi', [PembayaranController::class, 'verifikasi'])->name('pembayaran.verifikasi');
+    Route::post('/pembayaran/{pembayaran}/tolak', [PembayaranController::class, 'tolak'])->name('pembayaran.tolak');
 });
 
 // Mitra Area
@@ -92,11 +78,8 @@ Route::middleware(['auth', 'role:mitra'])->prefix('mitra')->name('mitra.')->grou
     Route::get('/pesanan', [MitraController::class, 'pesananIndex'])->name('pesanan.index');
     Route::get('/pengiriman/{id}/track', [MitraController::class, 'trackPengiriman'])->name('pengiriman.track');
     Route::get('/pesanan/{id}/bayar', [PembayaranController::class, 'show'])->name('pembayaran.show');
+    Route::post('/pesanan/{id}/bayar', [PembayaranController::class, 'upload'])->name('pembayaran.upload');
 });
-
-// Webhook Midtrans (dipanggil dari server Midtrans, bukan dari browser user, jadi di luar middleware auth
-// dan dikecualikan dari CSRF di bootstrap/app.php)
-Route::post('/midtrans/notification', [PembayaranController::class, 'notification'])->name('midtrans.notification');
 
 // Driver Area
 Route::middleware(['auth', 'role:driver'])->prefix('driver')->name('driver.')->group(function () {
