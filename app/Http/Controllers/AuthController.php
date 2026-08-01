@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Mitra;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -48,44 +46,6 @@ class AuthController extends Controller
         return back()->withErrors([
             'email' => 'Email atau password salah.',
         ]);
-    }
-
-    public function showRegister()
-    {
-        if (Auth::check()) {
-            return $this->redirectUserBasedOnRole(Auth::user());
-        }
-        return view('auth.register');
-    }
-
-    public function register(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6|confirmed',
-            'nama_perusahaan' => 'required|string|max:255',
-            'alamat' => 'required|string',
-            'no_hp' => 'required|string|max:15',
-        ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'mitra',
-        ]);
-
-        Mitra::create([
-            'user_id' => $user->id,
-            'nama_perusahaan' => $request->nama_perusahaan,
-            'alamat' => $request->alamat,
-            'no_hp' => $request->no_hp,
-        ]);
-
-        Auth::login($user);
-
-        return redirect()->route('mitra.dashboard')->with('success', 'Registrasi berhasil dan Anda telah masuk.');
     }
 
     public function logout(Request $request)
