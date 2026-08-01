@@ -3,7 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -12,15 +11,26 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Ubah status: menunggu (belum bayar) -> menunggu_verifikasi (sudah upload bukti,
-        // nunggu dicek admin) -> lunas / ditolak.
-        DB::statement("ALTER TABLE pembayarans MODIFY status ENUM('menunggu', 'menunggu_verifikasi', 'lunas', 'ditolak') NOT NULL DEFAULT 'menunggu'");
+        Schema::create('pembayarans', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('pesanan_id')->constrained('pesanans')->onDelete('cascade');
 
-        Schema::table('pembayarans', function (Blueprint $table) {
-            $table->string('bukti_transfer')->nullable()->after('metode_pembayaran');
-            $table->foreignId('diverifikasi_oleh')->nullable()->after('bukti_transfer')->constrained('users')->onDelete('set null');
-            $table->timestamp('diverifikasi_at')->nullable()->after('diverifikasi_oleh');
-            $table->text('catatan_admin')->nullable()->after('diverifikasi_at'); // alasan kalau ditolak
+            // Order ID unik yang dikirim ke Midtrans (Midtrans mewajibkan order_id unik selamanya).
+            $table->string('order_id')->unique();
+
+            $table->decimal('jumlah_tagihan', 14, 2);
+            $table->text('snap_token')->nullable();
+
+            // menunggu   = pesanan dibuat, belum bayar
+            // lunas      = pembayaran berhasil diverifikasi (dari webhook Midtrans)
+            // gagal      = pembayaran ditolak/deny
+            // kedaluwarsa= snap token/transaksi sudah expire
+            $table->enum('status', ['menunggu', 'lunas', 'gagal', 'kedaluwarsa'])->default('menunggu');
+
+            $table->string('metode_pembayaran')->nullable(); // contoh: bank_transfer, gopay, credit_card
+            $table->timestamp('paid_at')->nullable();
+
+            $table->timestamps();
         });
     }
 
@@ -29,11 +39,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('pembayarans', function (Blueprint $table) {
-            $table->dropForeign(['diverifikasi_oleh']);
-            $table->dropColumn(['bukti_transfer', 'diverifikasi_oleh', 'diverifikasi_at', 'catatan_admin']);
-        });
-
-        DB::statement("ALTER TABLE pembayarans MODIFY status ENUM('menunggu', 'lunas', 'gagal', 'kedaluwarsa') NOT NULL DEFAULT 'menunggu'");
+        Schema::dropIfExists('pembayarans');
     }
 };
