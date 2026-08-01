@@ -329,10 +329,15 @@ class AdminController extends Controller
                 ->with('error', 'Pesanan #' . $pesanan->id . ' belum dibayar oleh mitra. Tidak bisa dijadwalkan.');
         }
 
+        // Driver dianggap "sedang bertugas" kalau punya pengiriman lain yang statusnya masih 'proses'
+        // (belum ditandai selesai oleh driver). Driver seperti ini tetap ditampilkan di dropdown,
+        // tapi di-disable & diberi label supaya admin tidak menugaskan mereka dobel.
+        $busyDriverIds = Pengiriman::where('status', 'proses')->pluck('driver_id')->toArray();
+
         $drivers = Driver::with('user')->where('status', 'aktif')->get();
         $armadas = Armada::where('status', 'aktif')->get();
 
-        return view('admin.pesanan.dispatch', compact('pesanan', 'drivers', 'armadas'));
+        return view('admin.pesanan.dispatch', compact('pesanan', 'drivers', 'armadas', 'busyDriverIds'));
     }
 
     public function pesananDispatch(Request $request, $id)
@@ -349,6 +354,17 @@ class AdminController extends Controller
             'armada_id' => 'required|exists:armadas,id',
             'tanggal_kirim' => 'required|date',
         ]);
+
+        // Jaga-jaga di sisi server: tolak kalau driver yang dipilih ternyata sedang punya
+        // pengiriman aktif lain (misalnya karena request lama/manual, atau dua admin submit bersamaan).
+        $driverSedangBertugas = Pengiriman::where('driver_id', $request->driver_id)
+            ->where('status', 'proses')
+            ->exists();
+
+        if ($driverSedangBertugas) {
+            return back()->withInput()
+                ->with('error', 'Driver yang dipilih sedang dalam perjalanan mengantar pesanan lain. Pilih driver lain atau tunggu sampai tugasnya selesai.');
+        }
 
         DB::transaction(function () use ($request, $pesanan) {
             // Update pesanan status

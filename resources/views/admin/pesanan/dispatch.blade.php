@@ -40,18 +40,18 @@
         <!-- Dispatch Settings Card -->
         <div class="card-custom">
             @if($errors->any())
-                <div class="alert alert-danger border-0 rounded-3 shadow-2xs mb-4">
-                    <ul class="mb-0 ps-3">
-                        @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
+            <div class="alert alert-danger border-0 rounded-3 shadow-2xs mb-4">
+                <ul class="mb-0 ps-3">
+                    @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
             @endif
 
             <form action="{{ route('admin.pesanan.dispatch', $pesanan->id) }}" method="POST">
                 @csrf
-                
+
                 <div class="mb-3">
                     <label for="driver_id" class="form-label fw-semibold">Pilih Pengemudi (Driver Aktif)</label>
                     <div class="input-group">
@@ -59,7 +59,11 @@
                         <select name="driver_id" id="driver_id" class="form-select" required>
                             <option value="">-- Pilih Driver --</option>
                             @foreach($drivers as $driver)
-                                <option value="{{ $driver->id }}">{{ $driver->user->name }} (Telp: {{ $driver->no_hp }})</option>
+                            @php $sedangBertugas = in_array($driver->id, $busyDriverIds); @endphp
+                            <option value="{{ $driver->id }}" @disabled($sedangBertugas)>
+                                {{ $driver->user->name }} (Telp: {{ $driver->no_hp }})
+                                @if($sedangBertugas) — Sedang Dalam Perjalanan @endif
+                            </option>
                             @endforeach
                         </select>
                     </div>
@@ -72,9 +76,9 @@
                         <select name="armada_id" id="armada_id" class="form-select" required>
                             <option value="">-- Pilih Armada --</option>
                             @foreach($armadas as $armada)
-                                <option value="{{ $armada->id }}">
-                                    {{ $armada->no_polisi }} - {{ $armada->jenis }} (Kapasitas: {{ number_format($armada->kapasitas) }} L)
-                                </option>
+                            <option value="{{ $armada->id }}">
+                                {{ $armada->no_polisi }} - {{ $armada->jenis }} (Kapasitas: {{ number_format($armada->kapasitas) }} L)
+                            </option>
                             @endforeach
                         </select>
                     </div>
