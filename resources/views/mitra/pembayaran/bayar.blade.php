@@ -80,7 +80,29 @@
 
             <div class="text-center mb-4">
                 <p class="fw-semibold mb-2">Scan QRIS berikut untuk membayar:</p>
-                <img src="{{ asset('images/qris.jpeg') }}" alt="QRIS PT Indah Kuala Kapuas" class="img-fluid rounded-3 border p-2" style="max-width: 320px;">
+
+                <ul class="nav nav-pills justify-content-center gap-2 mb-3" id="qris-tab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="qris1-tab" data-bs-toggle="tab" data-bs-target="#qris1-pane" type="button" role="tab" aria-controls="qris1-pane" aria-selected="true">
+                            QRIS (DANA)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="qris2-tab" data-bs-toggle="tab" data-bs-target="#qris2-pane" type="button" role="tab" aria-controls="qris2-pane" aria-selected="false">
+                            QRIS (ShopeePay)
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="qris-tab-content">
+                    <div class="tab-pane fade show active" id="qris1-pane" role="tabpanel" aria-labelledby="qris1-tab">
+                        <img src="{{ asset('images/qris.jpeg') }}" alt="QRIS DANA - PT Indah Kuala Kapuas" class="img-fluid rounded-3 border p-2" style="max-width: 320px;">
+                    </div>
+                    <div class="tab-pane fade" id="qris2-pane" role="tabpanel" aria-labelledby="qris2-tab">
+                        <img src="{{ asset('images/qris2.jpeg') }}" alt="QRIS ShopeePay - PT Indah Kuala Kapuas" class="img-fluid rounded-3 border p-2" style="max-width: 320px;">
+                    </div>
+                </div>
+
                 <p class="text-muted small mt-2 mb-0">
                     Setelah transfer, screenshot bukti pembayaran (menampilkan nominal & status berhasil), lalu upload lewat form di bawah ini.
                 </p>
