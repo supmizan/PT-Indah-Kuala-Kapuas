@@ -7,6 +7,7 @@ use App\Models\Driver;
 use App\Models\Mitra;
 use App\Models\Armada;
 use App\Models\Pesanan;
+use App\Models\Pembayaran;
 use App\Models\Pengiriman;
 use App\Models\Laporan;
 use Illuminate\Http\Request;
@@ -216,6 +217,22 @@ class AdminController extends Controller
                 'no_hp' => $request->no_hp,
                 'harga_per_liter' => $request->harga_per_liter,
             ]);
+
+            // Kalau harga per liter berubah, sesuaikan ulang total tagihan pesanan yang
+            // BELUM ada bukti transfer diupload (status: menunggu / ditolak) supaya pakai harga terbaru.
+            // Pesanan yang sudah "menunggu_verifikasi" (mitra sudah upload bukti dengan nominal lama)
+            // atau sudah "lunas" TIDAK disentuh, supaya tidak mengubah nominal yang sudah dibayar/sedang direview.
+            Pembayaran::whereIn('status', ['menunggu', 'ditolak'])
+                ->whereHas('pesanan', function ($query) use ($mitra) {
+                    $query->where('mitra_id', $mitra->id);
+                })
+                ->with('pesanan')
+                ->get()
+                ->each(function ($pembayaran) use ($request) {
+                    $pembayaran->update([
+                        'jumlah_tagihan' => $pembayaran->pesanan->jumlah_bbm * $request->harga_per_liter,
+                    ]);
+                });
         });
 
         return redirect()->route('admin.mitra.index')->with('success', 'Data mitra berhasil diperbarui.');
