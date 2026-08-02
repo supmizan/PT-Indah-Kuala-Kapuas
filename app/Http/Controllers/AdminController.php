@@ -366,6 +366,13 @@ class AdminController extends Controller
                 ->with('error', 'Driver yang dipilih sedang dalam perjalanan mengantar pesanan lain. Pilih driver lain atau tunggu sampai tugasnya selesai.');
         }
 
+        // Validasi Opsi A: Cek apakah kapasitas armada tangki mencukupi jumlah BBM pesanan
+        $armada = Armada::findOrFail($request->armada_id);
+        if ($armada->kapasitas < $pesanan->jumlah_bbm) {
+            return back()->withInput()
+                ->with('error', 'Kapasitas armada tangki (' . number_format($armada->kapasitas) . ' Liter) lebih kecil dari jumlah BBM pesanan (' . number_format($pesanan->jumlah_bbm) . ' Liter). Silakan pilih armada lain.');
+        }
+
         DB::transaction(function () use ($request, $pesanan) {
             // Update pesanan status
             $pesanan->update(['status' => 'diproses']);

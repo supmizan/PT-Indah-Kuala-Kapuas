@@ -1,457 +1,167 @@
-<?php
+@extends('layouts.dashboard')
 
-namespace App\Http\Controllers;
+@section('title', 'Tambah Mitra Baru')
 
-use App\Models\User;
-use App\Models\Driver;
-use App\Models\Mitra;
-use App\Models\Armada;
-use App\Models\Pesanan;
-use App\Models\Pengiriman;
-use App\Models\Laporan;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
-
-class AdminController extends Controller
-{
-    public function dashboard()
-    {
-        $stats = [
-            'drivers' => Driver::count(),
-            'mitras' => Mitra::count(),
-            'armadas' => Armada::count(),
-            'active_deliveries' => Pengiriman::where('status', 'proses')->count(),
-            'pending_orders' => Pesanan::where('status', 'pending')->count(),
-        ];
-
-        // Fetch recent activities
-        $recent_deliveries = Pengiriman::with(['pesanan.mitra', 'driver.user', 'armada'])
-            ->latest()
-            ->take(5)
-            ->get();
-
-        return view('admin.dashboard', compact('stats', 'recent_deliveries'));
+@section('styles')
+<style>
+    /* Styling map picker area */
+    #map-picker {
+        height: 320px;
+        border-radius: 12px;
+        border: 1px solid #dee2e6;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.075);
+        z-index: 1;
     }
+</style>
+@endsection
 
-    // --- DRIVER CRUD ---
-    public function driverIndex()
-    {
-        $drivers = Driver::with('user')->paginate(10);
-        return view('admin.driver.index', compact('drivers'));
-    }
+@section('content')
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- Header Halaman -->
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h3 class="fw-bold mb-0">Tambah Mitra Kerja Baru</h3>
+            <a href="{{ route('admin.mitra.index') }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i> Kembali</a>
+        </div>
 
-    public function driverCreate()
-    {
-        return view('admin.driver.create');
-    }
+        <!-- Card Form Tambah Mitra -->
+        <div class="card-custom">
+            <!-- Alert Error Validasi -->
+            @if($errors->any())
+            <div class="alert alert-danger border-0 rounded-3 shadow-2xs mb-4">
+                <ul class="mb-0 ps-3">
+                    @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+            @endif
 
-    public function driverStore(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-            'no_hp' => 'required|string|max:15',
-            'alamat' => 'required|string',
-        ]);
+            <!-- Form input tambah mitra -->
+            <form action="{{ route('admin.mitra.store') }}" method="POST">
+                @csrf
 
-        DB::transaction(function () use ($request) {
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'role' => 'driver',
-            ]);
+                <!-- Seksi Akun Login -->
+                <h5 class="fw-bold text-primary mb-3 border-bottom pb-2"><i class="fa-solid fa-circle-user me-2"></i> Akun Pengguna</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="name" class="form-label fw-medium">Nama Penanggung Jawab</label>
+                        <input type="text" name="name" id="name" class="form-control" value="{{ old('name') }}" placeholder="Contoh: Budi Santoso" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="email" class="form-label fw-medium">Alamat Email</label>
+                        <input type="email" name="email" id="email" class="form-control" value="{{ old('email') }}" placeholder="Contoh: budi@mitra.com" required>
+                    </div>
+                    <div class="col-md-12">
+                        <label for="password" class="form-label fw-medium">Password Akun</label>
+                        <input type="password" name="password" id="password" class="form-control" placeholder="Minimal 6 karakter" required>
+                    </div>
+                </div>
 
-            Driver::create([
-                'user_id' => $user->id,
-                'no_hp' => $request->no_hp,
-                'alamat' => $request->alamat,
-                'status' => 'aktif',
-            ]);
-        });
+                <!-- Seksi Profil Perusahaan -->
+                <h5 class="fw-bold text-primary mb-3 border-bottom pb-2"><i class="fa-solid fa-building me-2"></i> Profil Perusahaan</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="nama_perusahaan" class="form-label fw-medium">Nama Perusahaan / Instansi</label>
+                        <input type="text" name="nama_perusahaan" id="nama_perusahaan" class="form-control" value="{{ old('nama_perusahaan') }}" placeholder="Contoh: PT Borneo Logistik" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="no_hp" class="form-label fw-medium">Nomor HP / Kontak</label>
+                        <input type="text" name="no_hp" id="no_hp" class="form-control" value="{{ old('no_hp') }}" placeholder="Contoh: 0812345678" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="harga_per_liter" class="form-label fw-medium">Harga BBM per Liter (Rp)</label>
+                        <input type="number" step="0.01" min="0" name="harga_per_liter" id="harga_per_liter" class="form-control" value="{{ old('harga_per_liter', 15000) }}" placeholder="Contoh: 15200" required>
+                    </div>
+                    <div class="col-md-12">
+                        <label for="alamat" class="form-label fw-medium">Alamat Lengkap</label>
+                        <textarea name="alamat" id="alamat" rows="3" class="form-control" placeholder="Tuliskan alamat lengkap kantor/gudang mitra..." required>{{ old('alamat') }}</textarea>
+                    </div>
+                    
+                    <!-- Seksi Titik Koordinat GPS + Map Picker (Opsi B) -->
+                    <div class="col-md-12 mt-4">
+                        <label class="form-label fw-semibold text-primary"><i class="fa-solid fa-map-location-dot me-1"></i> Pilih Lokasi Mitra pada Peta</label>
+                        <div id="map-picker" class="mb-2"></div>
+                        <p class="small text-muted mb-3"><i class="fa-solid fa-circle-info me-1"></i> Klik pada peta untuk mengisi otomatis form latitude/longitude di bawah, atau ketik secara manual.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="latitude" class="form-label fw-medium">Latitude</label>
+                        <input type="text" name="latitude" id="latitude" class="form-control" placeholder="Contoh: -0.0270" value="{{ old('latitude') }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="longitude" class="form-label fw-medium">Longitude</label>
+                        <input type="text" name="longitude" id="longitude" class="form-control" placeholder="Contoh: 109.3500" value="{{ old('longitude') }}">
+                    </div>
+                </div>
 
-        return redirect()->route('admin.driver.index')->with('success', 'Driver berhasil ditambahkan.');
-    }
+                <!-- Tombol Submit -->
+                <button type="submit" class="btn btn-primary w-100 py-2.5 rounded-3 fw-semibold text-uppercase shadow-sm">
+                    Tambah Mitra Baru <i class="fa-solid fa-plus ms-1"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+@endsection
 
-    public function driverEdit($id)
-    {
-        $driver = Driver::with('user')->findOrFail($id);
-        return view('admin.driver.edit', compact('driver'));
-    }
+@section('scripts')
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Koordinat awal (default: Kota Pontianak)
+        const defaultCoords = [-0.0263, 109.3425];
+        const map = L.map('map-picker').setView(defaultCoords, 13);
 
-    public function driverUpdate(Request $request, $id)
-    {
-        $driver = Driver::findOrFail($id);
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $driver->user_id,
-            'no_hp' => 'required|string|max:15',
-            'alamat' => 'required|string',
-            'status' => 'required|in:aktif,nonaktif',
-        ]);
+        // Tile layer OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
 
-        DB::transaction(function () use ($request, $driver) {
-            $driver->user->update([
-                'name' => $request->name,
-                'email' => $request->email,
-            ]);
+        let marker = null;
 
-            if ($request->filled('password')) {
-                $driver->user->update([
-                    'password' => Hash::make($request->password),
-                ]);
-            }
+        // Tampilkan marker awal jika latitude/longitude terisi (misalnya saat reload form karena error validasi)
+        const oldLat = document.getElementById('latitude').value;
+        const oldLng = document.getElementById('longitude').value;
+        if (oldLat && oldLng) {
+            const oldCoords = [parseFloat(oldLat), parseFloat(oldLng)];
+            marker = L.marker(oldCoords).addTo(map);
+            map.setView(oldCoords, 15);
+        }
 
-            $driver->update([
-                'no_hp' => $request->no_hp,
-                'alamat' => $request->alamat,
-                'status' => $request->status,
-            ]);
-        });
+        // Tangani klik pada peta untuk mengambil koordinat
+        map.on('click', function(e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
 
-        return redirect()->route('admin.driver.index')->with('success', 'Data driver berhasil diperbarui.');
-    }
+            // Masukkan koordinat ke dalam input form
+            document.getElementById('latitude').value = lat.toFixed(6);
+            document.getElementById('longitude').value = lng.toFixed(6);
 
-    public function driverDestroy($id)
-    {
-        $driver = Driver::findOrFail($id);
-        DB::transaction(function () use ($driver) {
-            $user = $driver->user;
-            $driver->delete();
-            if ($user) {
-                $user->delete();
-            }
-        });
-
-        return redirect()->route('admin.driver.index')->with('success', 'Driver berhasil dihapus.');
-    }
-
-    // --- MITRA CRUD ---
-    public function mitraIndex()
-    {
-        $mitras = Mitra::with('user')->paginate(10);
-        return view('admin.mitra.index', compact('mitras'));
-    }
-
-    public function mitraCreate()
-    {
-        return view('admin.mitra.create');
-    }
-
-    public function mitraStore(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-            'nama_perusahaan' => 'required|string|max:255',
-            'no_hp' => 'required|string|max:15',
-            'alamat' => 'required|string',
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
-            'harga_per_liter' => 'required|numeric|min:0',
-        ]);
-
-        DB::transaction(function () use ($request) {
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'role' => 'mitra',
-            ]);
-
-            Mitra::create([
-                'user_id' => $user->id,
-                'nama_perusahaan' => $request->nama_perusahaan,
-                'alamat' => $request->alamat,
-                'latitude' => $request->latitude,
-                'longitude' => $request->longitude,
-                'no_hp' => $request->no_hp,
-                'harga_per_liter' => $request->harga_per_liter,
-            ]);
-        });
-
-        return redirect()->route('admin.mitra.index')->with('success', 'Mitra berhasil ditambahkan.');
-    }
-
-    public function mitraEdit($id)
-    {
-        $mitra = Mitra::with('user')->findOrFail($id);
-        return view('admin.mitra.edit', compact('mitra'));
-    }
-
-    public function mitraUpdate(Request $request, $id)
-    {
-        $mitra = Mitra::findOrFail($id);
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $mitra->user_id,
-            'nama_perusahaan' => 'required|string|max:255',
-            'no_hp' => 'required|string|max:15',
-            'alamat' => 'required|string',
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
-            'harga_per_liter' => 'required|numeric|min:0',
-        ]);
-
-        DB::transaction(function () use ($request, $mitra) {
-            $mitra->user->update([
-                'name' => $request->name,
-                'email' => $request->email,
-            ]);
-
-            if ($request->filled('password')) {
-                $mitra->user->update([
-                    'password' => Hash::make($request->password),
-                ]);
-            }
-
-            $mitra->update([
-                'nama_perusahaan' => $request->nama_perusahaan,
-                'alamat' => $request->alamat,
-                'latitude' => $request->latitude,
-                'longitude' => $request->longitude,
-                'no_hp' => $request->no_hp,
-                'harga_per_liter' => $request->harga_per_liter,
-            ]);
-        });
-
-        return redirect()->route('admin.mitra.index')->with('success', 'Data mitra berhasil diperbarui.');
-    }
-
-    public function mitraDestroy($id)
-    {
-        $mitra = Mitra::findOrFail($id);
-        DB::transaction(function () use ($mitra) {
-            $user = $mitra->user;
-            $mitra->delete();
-            if ($user) {
-                $user->delete();
+            // Geser atau tambahkan marker baru
+            if (marker) {
+                marker.setLatLng(e.latlng);
+            } else {
+                marker = L.marker(e.latlng).addTo(map);
             }
         });
 
-        return redirect()->route('admin.mitra.index')->with('success', 'Mitra berhasil dihapus.');
-    }
-
-    // --- ARMADA CRUD ---
-    public function armadaIndex()
-    {
-        $armadas = Armada::paginate(10);
-        $total_armada = Armada::count();
-        $aktif_armada = Armada::where('status', 'aktif')->count();
-        $maintenance_armada = Armada::where('status', 'maintenance')->count();
-        return view('admin.armada.index', compact('armadas', 'total_armada', 'aktif_armada', 'maintenance_armada'));
-    }
-
-    public function armadaCreate()
-    {
-        return view('admin.armada.create');
-    }
-
-    public function armadaStore(Request $request)
-    {
-        $request->validate([
-            'kode_armada' => 'required|string|max:20|unique:armadas,kode_armada',
-            'no_polisi' => 'required|string|max:15|unique:armadas,no_polisi',
-            'jenis' => 'required|string|max:50',
-            'kapasitas' => 'required|integer|min:1',
-            'status' => 'required|in:aktif,digunakan,maintenance',
-        ]);
-
-        Armada::create($request->all());
-
-        return redirect()->route('admin.armada.index')->with('success', 'Armada berhasil ditambahkan.');
-    }
-
-    public function armadaEdit($id)
-    {
-        $armada = Armada::findOrFail($id);
-        return view('admin.armada.edit', compact('armada'));
-    }
-
-    public function armadaUpdate(Request $request, $id)
-    {
-        $armada = Armada::findOrFail($id);
-        $request->validate([
-            'kode_armada' => 'required|string|max:20|unique:armadas,kode_armada,' . $id,
-            'no_polisi' => 'required|string|max:15|unique:armadas,no_polisi,' . $id,
-            'jenis' => 'required|string|max:50',
-            'kapasitas' => 'required|integer|min:1',
-            'status' => 'required|in:aktif,digunakan,maintenance',
-        ]);
-
-        $armada->update($request->all());
-
-        return redirect()->route('admin.armada.index')->with('success', 'Armada berhasil diperbarui.');
-    }
-
-    public function armadaDestroy($id)
-    {
-        $armada = Armada::findOrFail($id);
-        $armada->delete();
-
-        return redirect()->route('admin.armada.index')->with('success', 'Armada berhasil dihapus.');
-    }
-
-    // --- PESANAN & DISPATCH ---
-    public function pesananIndex()
-    {
-        $pesanans = Pesanan::with(['mitra', 'pembayaran'])->latest()->paginate(10);
-
-        return view('admin.pesanan.index', compact('pesanans'));
-    }
-
-    public function pesananDispatchForm($id)
-    {
-        $pesanan = Pesanan::with(['mitra', 'pembayaran'])->findOrFail($id);
-
-        if (!$pesanan->sudahLunas()) {
-            return redirect()->route('admin.pesanan.index')
-                ->with('error', 'Pesanan #' . $pesanan->id . ' belum dibayar oleh mitra. Tidak bisa dijadwalkan.');
-        }
-
-        $drivers = Driver::with('user')->where('status', 'aktif')->get();
-        $armadas = Armada::where('status', 'aktif')->get();
-
-        return view('admin.pesanan.dispatch', compact('pesanan', 'drivers', 'armadas'));
-    }
-
-    public function pesananDispatch(Request $request, $id)
-    {
-        $pesanan = Pesanan::with('pembayaran')->findOrFail($id);
-
-        if (!$pesanan->sudahLunas()) {
-            return redirect()->route('admin.pesanan.index')
-                ->with('error', 'Pesanan #' . $pesanan->id . ' belum dibayar oleh mitra. Tidak bisa dijadwalkan.');
-        }
-
-        $request->validate([
-            'driver_id' => 'required|exists:drivers,id',
-            'armada_id' => 'required|exists:armadas,id',
-            'tanggal_kirim' => 'required|date',
-        ]);
-
-        DB::transaction(function () use ($request, $pesanan) {
-            // Update pesanan status
-            $pesanan->update(['status' => 'diproses']);
-
-            // Create Pengiriman
-            Pengiriman::create([
-                'pesanan_id' => $pesanan->id,
-                'driver_id' => $request->driver_id,
-                'armada_id' => $request->armada_id,
-                'tanggal_kirim' => $request->tanggal_kirim,
-                'status' => 'proses',
-            ]);
-
-            // Update Armada status
-            $armada = Armada::findOrFail($request->armada_id);
-            $armada->update(['status' => 'digunakan']);
-        });
-
-        return redirect()->route('admin.pesanan.index')->with('success', 'Pesanan berhasil dijadwalkan dan ditugaskan.');
-    }
-
-    // --- PENGIRIMAN & LAPORAN ---
-    public function pengirimanIndex()
-    {
-        $pengirimans = Pengiriman::with(['pesanan.mitra', 'driver.user', 'armada'])->latest()->paginate(10);
-        return view('admin.pengiriman.index', compact('pengirimans'));
-    }
-
-    public function pengirimanTrack($id)
-    {
-        $pengiriman = Pengiriman::with(['pesanan.mitra', 'driver.user', 'armada', 'trackings' => function ($query) {
-            $query->latest();
-        }])->findOrFail($id);
-
-        return view('admin.pengiriman.track', compact('pengiriman'));
-    }
-
-    public function laporanIndex(Request $request)
-    {
-        $query = Laporan::with(['pengiriman.pesanan.mitra', 'pengiriman.driver.user', 'pengiriman.armada']);
-
-        if ($request->filled('dari')) {
-            $query->whereDate('created_at', '>=', $request->dari);
-        }
-        if ($request->filled('sampai')) {
-            $query->whereDate('created_at', '<=', $request->sampai);
-        }
-
-        $laporans = $query->latest()->paginate(10)->withQueryString();
-
-        return view('admin.laporan.index', compact('laporans'));
-    }
-
-    public function laporanCetak(Request $request)
-    {
-        $query = Laporan::with(['pengiriman.pesanan.mitra', 'pengiriman.driver.user', 'pengiriman.armada']);
-
-        if ($request->filled('dari')) {
-            $query->whereDate('created_at', '>=', $request->dari);
-        }
-        if ($request->filled('sampai')) {
-            $query->whereDate('created_at', '<=', $request->sampai);
-        }
-
-        $laporans = $query->latest()->get();
-
-        return view('admin.laporan.cetak', [
-            'laporans' => $laporans,
-            'dari' => $request->dari,
-            'sampai' => $request->sampai,
-        ]);
-    }
-
-    public function editPesanan($id)
-    {
-        $pesanan = Pesanan::findOrFail($id);
-
-        return view('admin.pesanan.edit', compact('pesanan'));
-    }
-
-    public function pesananDestroy($id)
-    {
-        $pesanan = Pesanan::with('pengirimans.armada')->findOrFail($id);
-
-        DB::transaction(function () use ($pesanan) {
-            // Kalau ada pengiriman yang masih 'proses', lepas dulu status armada-nya
-            // ke 'aktif' supaya armada tidak nyangkut berstatus 'digunakan' selamanya
-            // setelah pesanan (dan pengirimannya) dihapus.
-            foreach ($pesanan->pengirimans as $pengiriman) {
-                if ($pengiriman->status === 'proses' && $pengiriman->armada) {
-                    $pengiriman->armada->update(['status' => 'aktif']);
+        // Tangani input manual pada form untuk menggerakkan marker peta secara langsung
+        function updateMapFromInputs() {
+            const lat = parseFloat(document.getElementById('latitude').value);
+            const lng = parseFloat(document.getElementById('longitude').value);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                const newCoords = [lat, lng];
+                if (marker) {
+                    marker.setLatLng(newCoords);
+                } else {
+                    marker = L.marker(newCoords).addTo(map);
                 }
+                map.setView(newCoords, 15);
             }
+        }
 
-            // Pengiriman, Pembayaran, Tracking, dan Laporan terkait ikut terhapus
-            // otomatis lewat cascade delete di database.
-            $pesanan->delete();
-        });
-
-        return redirect()->route('admin.pesanan.index')->with('success', 'Pesanan berhasil dihapus.');
-    }
-
-    public function updatePesanan(Request $request, $id)
-    {
-        $request->validate([
-            'tanggal' => 'required|date',
-            'jumlah_bbm' => 'required|numeric',
-            'status' => 'required'
-        ]);
-
-        $pesanan = Pesanan::findOrFail($id);
-
-        $pesanan->update([
-            'tanggal' => $request->tanggal,
-            'jumlah_bbm' => $request->jumlah_bbm,
-            'status' => $request->status,
-        ]);
-
-        return redirect()->route('admin.pesanan.index')
-            ->with('success', 'Pesanan berhasil diperbarui.');
-    }
-}
+        document.getElementById('latitude').addEventListener('input', updateMapFromInputs);
+        document.getElementById('longitude').addEventListener('input', updateMapFromInputs);
+    });
+</script>
+@endsection
